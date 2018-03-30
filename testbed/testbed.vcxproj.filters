@@ -21,36 +21,12 @@
     <ClInclude Include="targetver.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="calibrator\global.hpp">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="calibrator\models\shortrate\onefactormodels\generalhullwhite.hpp">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="calibrator\models\parameters\logistic_function.hpp">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="calibrator\models\integrableparameter.hpp">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="calibrator\models\parameters\integrableconstant.hpp">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="calibrator\processes\generalornsteinuhlenbeckprocess.hpp">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="calibrator\models\shortrate\twofactormodels\generalg2.hpp">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
-    <ClCompile Include="calibrator\models\shortrate\onefactormodels\generalhullwhite.cpp">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="calibrator\processes\generalornsteinuhlenbeckprocess.cpp">
+    <ClCompile Include="testbed.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
