@@ -49,10 +49,18 @@ namespace HJCALIBRATOR
 		: termStructure_( termStructure )
 		, a_( a )
 		, sigma_( sigma )
-		, integrator_( GaussKronrodAdaptive( 0.00001, 1000 ) )
-		, OneOverEintegrand_( boost::bind( &GeneralizedHullWhite::FittingParameter::Impl::E, this, 0, _1, -1. ) )
-		, Vrintegrand_( boost::bind( &GeneralizedHullWhite::FittingParameter::Impl::integrandVr, this, _1 ) )
-	{}
+		, int_wrkspcs_( gsl_integration_workspace_alloc( 1000 ) )
+		, integrator_( GaussKronrodAdaptive(0.0001, 1000))
+		//, integrator_( SimpsonIntegral( 10, 100000000 ) )
+		//, OneOverEintegrand_( boost::bind( &GeneralizedHullWhite::FittingParameter::Impl::E, this, 0, _1, -1. ) )
+		//, Vrintegrand_( boost::bind( &GeneralizedHullWhite::FittingParameter::Impl::integrandVr, this, _1 ) )
+	{
+		//boost::function<Real( Real )> tmpptr = boost::bind( &GeneralizedHullWhite::FittingParameter::Impl::integrandVr, this, _1 );
+		//integrand_Vr_ = convertToGslFunction( tmpptr );
+
+		//boost::function<Real( Real )> tmpptr1 = boost::bind( &GeneralizedHullWhite::FittingParameter::Impl::E, this, 0, _1, -1. );
+		//OneOverE_ = convertToGslFunction( tmpptr1 );
+	}
 
 	Real GeneralizedHullWhite::discountBondOption( Option::Type type,
 												   Real strike,
@@ -94,12 +102,51 @@ namespace HJCALIBRATOR
 
 	Real GeneralizedHullWhite::discountBondOption( Option::Type type,
 												   Real strike,
-												   Time maturity, // corresponds to now?
+												   Time maturity, 
 												   Time bondStart,
 												   Time bondMaturity ) const
 	{
 		return discountBondOption( type, strike, bondStart, bondMaturity );
 	}
+
+	Real GeneralizedHullWhite::FittingParameter::Impl::value_integral( Time t ) const
+	{
+		auto& sigma = sigma_;
+
+		auto integrand = [&, sigma, t]( Time u, Time s )
+		{
+			return sigma( u ) * sigma( u )
+				* (1 / E( s, t ) + 1 / E( s, t ))
+				/ E( u, t );
+		};
+
+		// monte carlo integration
+		SobolRsg sobol( 3 );
+
+		Size N = 0; Size n = 0;
+		for ( Size i = 0; i < 10000; i++ )
+		{
+			auto seq = sobol.nextSequence();
+
+			// value[0] : u - [0,t], value[1] : s - [u,t]
+			Real u = t * seq.value[0];
+			Real s = t * seq.value[1];
+			Real val = t * seq.value[2];
+
+			if ( u < s )
+			{
+				continue;
+			}
+			else
+			{
+				N++;
+				if ( integrand( u, s ) < val ) n++;
+			}
+		}
+
+		return (double( n ) / double( N )) * t * t;
+	}
+
 
 	/*
 	   Rate GeneralizedHullWhite::convexityBias(Real futuresPrice,

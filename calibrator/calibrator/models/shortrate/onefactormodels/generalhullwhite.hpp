@@ -3,7 +3,9 @@
 
 #include <boost/bind.hpp>
 
+#include <ql/math/randomnumbers/sobolrsg.hpp>
 #include <ql/models/shortrate/onefactormodel.hpp>
+#include <ql/math/integrals/kronrodintegral.hpp>
 
 #include <calibrator/global.hpp>
 #include <calibrator/processes/generalornsteinuhlenbeckprocess.hpp>
@@ -37,11 +39,11 @@ namespace HJCALIBRATOR
 		virtual Real discountBondOption( Option::Type type,
 										 Real strike,
 										 Time maturity,
-										 Time bondMaturity ) const;
+										 Time bondMaturity ) const override;
 
-		Real discountBondOption( Option::Type type, Real strike,
-							Time maturity, Time bondStart,
-							Time bondMaturity ) const;
+		virtual Real discountBondOption( Option::Type type, Real strike,
+										 Time maturity, Time bondStart,
+										 Time bondMaturity ) const override;
 
 		Parameter a() const { return a_; }
 		Parameter sigma() const { return sigma_; }
@@ -98,6 +100,10 @@ namespace HJCALIBRATOR
 			Impl( const Handle<YieldTermStructure>& termStructure,
 				  const IntegrableParameter& a,
 				  const Parameter& sigma );
+			~Impl()
+			{
+				gsl_integration_workspace_free( int_wrkspcs_ );
+			}
 
 			Real value( const Array&, Time t ) const override;
 
@@ -108,10 +114,16 @@ namespace HJCALIBRATOR
 			Real E( Time t0, Time t1, Real multiplier = 1. ) const;
 			Real integrand( Time u, Time t ) const;
 			Real integrandVr( Time t ) const;
+			Real value_integral( Time t ) const;
+
+			gsl_integration_workspace* int_wrkspcs_;
+			//gsl_function integrand_Vr_;
+			//gsl_function OneOverE_;
 
 			GaussKronrodAdaptive integrator_;
-			boost::function<Real( Real )> OneOverEintegrand_; // Eq. 31 integrand
-			boost::function<Real( Real )> Vrintegrand_; // Eq. 37 integrand
+			//SimpsonIntegral integrator_;
+			//boost::function<Real( Real )> OneOverEintegrand_; // Eq. 31 integrand
+			//boost::function<Real( Real )> Vrintegrand_; // Eq. 37 integrand
 
 			Handle<YieldTermStructure> termStructure_;
 			IntegrableParameter a_;
@@ -121,8 +133,9 @@ namespace HJCALIBRATOR
 		FittingParameter( const Handle<YieldTermStructure>& termStructure,
 						  const IntegrableParameter& a,
 						  const Parameter& sigma )
-			: TermStructureFittingParameter( boost::shared_ptr<Parameter::Impl>(
-				new FittingParameter::Impl( termStructure, a, sigma ) ) ) {}
+			: TermStructureFittingParameter( boost::shared_ptr<Parameter::Impl>( new FittingParameter::Impl( termStructure, a, sigma ) ) )
+		{}
+
 
 		Real B( Time t, Time T ) const
 		{
@@ -165,15 +178,28 @@ namespace HJCALIBRATOR
 		return boost::shared_ptr<ShortRateDynamics>(
 			new Dynamics( *alpha_, static_cast<IntegrableParameter>(a()), sigma() ) );
 	}
+
 	inline Real GeneralizedHullWhite::FittingParameter::Impl::value( const Array&, Time t ) const
 	{
+		/*
 		Rate forwardRate = termStructure_->forwardRate( t, t, Continuous, NoFrequency );
 		Real Et = E( 0, t );
-
+		
 		boost::function<Real( Real )> I_t;
 		I_t = boost::bind( &GeneralizedHullWhite::FittingParameter::Impl::integrand, this, _1, t );
+		gsl_function tmpf = convertToGslFunction( I_t );
 
-		return forwardRate + integrator_( I_t, 0, t ) / Et;
+		Real result, error;
+		gsl_integration_qags( &tmpf, 0, t, 0, 1e-7, 1000, int_wrkspcs_, &result, &error );
+		
+		return forwardRate;// +result;
+		*/
+
+		Rate forwardRate = termStructure_->forwardRate( t, t, Continuous, NoFrequency );
+
+		Real intsum = value_integral( t );
+
+		return forwardRate + intsum;
 	}
 
 	inline Real GeneralizedHullWhite::FittingParameter::Impl::integrand( Time u, Time t ) const
@@ -202,15 +228,28 @@ namespace HJCALIBRATOR
 	inline Real GeneralizedHullWhite::FittingParameter::Impl::B( Time t, Time T ) const
 	{
 		/* eq. 31 */
-		return E( 0, t ) * integrator_( OneOverEintegrand_, t, T );
+
+		auto lambda = [&, t]( Time u )
+		{
+			return 1 / E( t, u );
+		};
+
+		return integrator_( lambda, t, T );
 	}
 
 	inline Real GeneralizedHullWhite::FittingParameter::Impl::variance( Time s, Time t ) const
 	{
 		/* eq. 37 */
-		Real E_t = E( 0, t );
+		const Parameter& sigma_i = sigma_;
 
-		return integrator_( Vrintegrand_, s, t ) / E_t / E_t;
+		auto integrand = [&, sigma_i,  t]( Time u )
+		{
+			Real sigma = sigma_i( u );
+			Real Eut = E( u, t );
+			return sigma * sigma / Eut / Eut;
+		};
+
+		return integrator_( integrand, s, t );
 	}
 }
 

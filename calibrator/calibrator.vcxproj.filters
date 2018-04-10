@@ -39,7 +39,13 @@
     <ClInclude Include="calibrator\processes\generalornsteinuhlenbeckprocess.hpp">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="calibrator\models\shortrate\twofactormodels\generalg2.hpp">
+    <ClInclude Include="calibrator\models\parameters\intagrablepiecewiseconstant.hpp">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="calibrator\models\parameters\shortrate\gaussianfactorfittingparameter.hpp">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="calibrator\math\integration\montecarlo.hpp">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
