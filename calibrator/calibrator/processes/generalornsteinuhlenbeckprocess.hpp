@@ -11,6 +11,7 @@
 
 #include <calibrator/global.hpp>
 #include <calibrator/models/integrableparameter.hpp>
+#include <calibrator/models/shortrate/dynamics/gaussianfactordynamics.hpp>
 
 namespace HJCALIBRATOR
 {
@@ -57,6 +58,12 @@ namespace HJCALIBRATOR
 		GeneralizedOrnsteinUhlenbeckProcess( const IntegrableParameter& a, // must be an IntegrableParameter
 											 const Parameter& sigma,
 											 const Real x0 = 0 );
+
+		GeneralizedOrnsteinUhlenbeckProcess( const Parameter& a, // must be an IntegrableParameter
+											 const Parameter& sigma,
+											 const Real x0 = 0 )
+		{}
+
 		virtual ~GeneralizedOrnsteinUhlenbeckProcess();
 
 		//! \name StochasticProcess1D interface
@@ -86,7 +93,6 @@ namespace HJCALIBRATOR
 		gsl_integration_workspace* int_wrkspcs_;
 		gsl_function integrand_Vr_;
 
-		SimpsonIntegral integrator_;
 		//boost::function<Real( Real )> Vrintegrand_; // variance integrand
 	};
 

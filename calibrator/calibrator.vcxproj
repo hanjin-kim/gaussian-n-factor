@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -89,6 +89,10 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>D:\Libraries\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Libraries\lib64;$(LibraryPath)</LibraryPath>
+    <OutDir>.\lib</OutDir>
+    <TargetName>lib$(ProjectName)_$(Platform)_$(Configuration)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -98,6 +102,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions);_SCL_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <DisableSpecificWarnings>4250</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -112,6 +117,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions);_SCL_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <DisableSpecificWarnings>4250</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -138,7 +144,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -146,6 +152,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -161,14 +168,23 @@
     <ClInclude Include="calibrator\models\parameters\integrableconstant.hpp" />
     <ClInclude Include="calibrator\models\integrableparameter.hpp" />
     <ClInclude Include="calibrator\models\parameters\logistic_function.hpp" />
-    <ClInclude Include="calibrator\models\parameters\shortrate\gaussianfactorfittingparameter.hpp" />
-    <ClInclude Include="calibrator\models\shortrate\onefactormodels\generalhullwhite.hpp" />
+    <ClInclude Include="calibrator\models\shortrate\dynamics\gaussianfactordynamics.hpp" />
+    <ClInclude Include="calibrator\models\shortrate\dynamics\gaussianfactor\g++cmr_pcv.hpp" />
+    <ClInclude Include="calibrator\models\shortrate\dynamics\gaussianfactor\g++constantmeanreversion.hpp" />
+    <ClInclude Include="calibrator\models\shortrate\dynamics\gaussianfactor\g++constant.hpp" />
+    <ClInclude Include="calibrator\models\shortrate\onefactormodels\generalg1.hpp" />
+    <ClInclude Include="calibrator\models\shortrate\twofactormodels\generalg2.hpp" />
     <ClInclude Include="calibrator\processes\generalornsteinuhlenbeckprocess.hpp" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="calibrator\models\shortrate\onefactormodels\generalhullwhite.cpp" />
+    <ClCompile Include="calibrator\models\shortrate\dynamics\gaussianfactordynamics.cpp" />
+    <ClCompile Include="calibrator\models\shortrate\dynamics\gaussianfactor\g++cmr_pcv.cpp" />
+    <ClCompile Include="calibrator\models\shortrate\dynamics\gaussianfactor\g++constant.cpp" />
+    <ClCompile Include="calibrator\models\shortrate\dynamics\gaussianfactor\g++constantmeanreversion.cpp" />
+    <ClCompile Include="calibrator\models\shortrate\onefactormodels\generalg1.cpp" />
+    <ClCompile Include="calibrator\models\shortrate\twofactormodels\generalg2.cpp" />
     <ClCompile Include="calibrator\processes\generalornsteinuhlenbeckprocess.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

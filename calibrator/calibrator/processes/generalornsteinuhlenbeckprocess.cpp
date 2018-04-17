@@ -8,7 +8,6 @@ namespace HJCALIBRATOR
 																			  const Parameter& sigma,
 																			  const Real x0 )
 		: x0_( x0 ), a_( a ), sigma_( sigma )
-		, integrator_( SimpsonIntegral( 10, 10000 ) )
 		//, Vrintegrand_( boost::bind( &GeneralizedOrnsteinUhlenbeckProcess::VrIntegrand, this, _1 ) )
 		, int_wrkspcs_( gsl_integration_workspace_alloc(1000) )
 	{

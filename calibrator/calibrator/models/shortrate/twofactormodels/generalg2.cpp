@@ -1,64 +1,41 @@
+#include <ql/pricingengines/blackformula.hpp>
+
 #include <calibrator/models/shortrate/twofactormodels/generalg2.hpp>
 
 namespace HJCALIBRATOR
 {
-	GeneralizedG2::GeneralizedG2( const Handle<YieldTermStructure>& termStructure,
-								  const IntegrableParameter& a,
-								  const Parameter& sigma,
-								  const IntegrableParameter& b,
-								  const Parameter& eta,
-								  const Real rho )
+	GeneralizedG2::GeneralizedG2( std::shared_ptr<Gaussian2FactorDynamics> dynamics )
 		: TwoFactorModel( 5 )
 		, AffineModel()
-		, TermStructureConsistentModel( termStructure )
+		, TermStructureConsistentModel( dynamics->termStructure() )
 		, a_( arguments_[0] ), sigma_( arguments_[1] )
 		, b_( arguments_[2] ), eta_( arguments_[3] )
 		, rho_( arguments_[4] )
+		, integrator_( GaussKronrodAdaptive( 0.01, 10000 ) )
 	{
-		a_ = a;
-		b_ = b;
-		sigma_ = sigma;
-		eta_ = eta;
-		rho_ = ConstantParameter( rho, BoundaryConstraint( -1.0, 1.0 ) );
+		a_ = dynamics->a(0);
+		b_ = dynamics->a(1);
+		sigma_ = dynamics->sigma(0);
+		eta_ = dynamics->sigma(1);
+		rho_ = dynamics->rho( 0, 1 );
 
 		generateArguments();
 
-		registerWith( termStructure );
+		registerWith( dynamics->termStructure() );
 	}
 
-	void GeneralizedG2::generateArguments() {
-
-		phi_ = boost::shared_ptr<FittingParameter>( new FittingParameter( termStructure(),
-																		  a(), sigma(), b(), eta(), rho() ) );
+	void GeneralizedG2::generateArguments() 
+	{
+		dynamics_->a( a_, 0 );
+		dynamics_->sigma( sigma_, 0 );
+		dynamics_->a( b_, 1 );
+		dynamics_->sigma( eta_, 1 );
+		dynamics_->rho( rho_, 1, 0 );
 	}
 
 	Real GeneralizedG2::A( Time t, Time T ) const
 	{
-		auto termStructure_ = termStructure();
-		Real discount_t = termStructure_->discount( t );
-		Real discount_T = termStructure_->discount( T );
-
-		Real VtT = phi_->V_I( t, T );
-		Real V0T = phi_->V_I( 0, T );
-		Real V0t = phi_->V_I( 0, t );
-
-		return (discount_T / discount_t) * exp( -0.5 * (V0T - VtT - V0t) );
-	}
-
-	Real GeneralizedG2::V_I( Time t, Time T ) const
-	{
-		
-	}
-
-
-	Real GeneralizedG2::B( Time t, Time T ) const
-	{
-		return phi_->B0( t, T );
-	}
-
-	Real GeneralizedG2::B1( Time t, Time T ) const
-	{
-		return phi_->B1( t, T );
+		return dynamics_->A( t, T );
 	}
 
 	Real GeneralizedG2::discountBond( Time now,
@@ -68,6 +45,69 @@ namespace HJCALIBRATOR
 		Real x = factors[0];
 		Real y = factors[1];
 
-		return A( now, maturity ) * exp( -B0( now, maturity ) * x - B1( now, maturity ) * y );
+		Real Bx = dynamics_->B( 0, now, maturity );
+		Real By = dynamics_->B( 1, now, maturity );
+
+		return A( now, maturity ) * exp( - Bx * x - By * y );
+	}
+
+
+	Real GeneralizedG2::discountBondOption( Option::Type type,
+											Real strike,
+											Time maturity,
+											Time bondMaturity ) const
+	{
+		auto dynamics = dynamics_;
+
+		Real Bx = dynamics->B( 0, maturity, bondMaturity );
+		Real By = dynamics->B( 1, maturity, bondMaturity );
+		Real rho = dynamics->rho( 0, 1 )(0.0);
+
+		Real Vpratio = 0;
+
+		auto integrand00 = [maturity, dynamics]( Time u )
+		{
+			Real sigma = dynamics->sigma( 0 )(u);
+			Real E = dynamics->E( 0, u, maturity );
+			
+			return sigma * sigma / E / E;
+		};
+
+		Vpratio += Bx * By * integrator_( integrand00, 0, maturity );
+
+		auto integrand11 = [maturity, dynamics]( Time u )
+		{
+			Real sigma = dynamics->sigma( 1 )(u);
+			Real E = dynamics->E( 1, u, maturity );
+
+			return sigma * sigma / E / E;
+		};
+
+		Vpratio += Bx * By * integrator_( integrand11, 0, maturity );
+
+		auto integrand01 = [maturity, dynamics]( Time u )
+		{
+			return dynamics->sigma( 0 )(u) * dynamics->sigma( 1 )(u) 
+				/ dynamics->E( 0, u, maturity ) / dynamics->E( 1, u, maturity );
+		};
+
+		Vpratio += 2 * Bx * Bx * rho * integrator_( integrand01, 0, maturity );
+
+		Real stdDev = sqrt( std::max( Vpratio, 0.0 ) );
+
+		Real f = termStructure()->discount( bondMaturity );
+		Real k = termStructure()->discount( maturity )*strike;
+
+		return blackFormula( type, k, f, stdDev );
+	}
+
+
+	Real GeneralizedG2::discountBondOption( Option::Type type,
+											Real strike,
+											Time maturity,
+											Time bondStart,
+											Time bondMaturity ) const
+	{
+		return discountBondOption( type, strike, bondStart, bondMaturity );
 	}
 }
