@@ -13,20 +13,20 @@ namespace HJCALIBRATOR
 	{
 		class Dynamics;
 
-		std::shared_ptr<Gaussian1FactorDynamics> dynamics_;
+		shared_ptr<Gaussian1FactorDynamics> dynamics_;
 		
 	public :
-		GeneralizedG1( std::shared_ptr<Gaussian1FactorDynamics> dynamics );
+		GeneralizedG1( shared_ptr<Gaussian1FactorDynamics> dynamics );
 		virtual ~GeneralizedG1() {}
 
 		// OneFactorModel virtual override
-		boost::shared_ptr<Lattice> tree( const TimeGrid& grid ) const override
+		shared_ptr<Lattice> tree( const TimeGrid& grid ) const override
 		{
 			// todo
-			return boost::shared_ptr<Lattice>();
+			return shared_ptr<Lattice>();
 		};
 
-		virtual boost::shared_ptr<ShortRateDynamics> dynamics() const override;
+		virtual shared_ptr<ShortRateDynamics> dynamics() const override;
 
 
 		virtual Real discountBondOption( Option::Type type,
@@ -54,8 +54,8 @@ namespace HJCALIBRATOR
 	/*! The short-rate follows an time-dependent Hull-White process */
 	class GeneralizedG1::Dynamics : public OneFactorModel::ShortRateDynamics {
 	public:
-		Dynamics( std::shared_ptr<Gaussian1FactorDynamics> dynamics )
-			: ShortRateDynamics( boost::shared_ptr<StochasticProcess1D>(
+		Dynamics( shared_ptr<Gaussian1FactorDynamics> dynamics )
+			: ShortRateDynamics( shared_ptr<StochasticProcess1D>(
 				new GeneralizedOrnsteinUhlenbeckProcess( dynamics->a( 0 ), dynamics->sigma( 0 ) ) ) )
 			, dynamics_( dynamics )
 		{}
@@ -67,13 +67,13 @@ namespace HJCALIBRATOR
 			return x + dynamics_->phi( t );
 		}
 
-		std::shared_ptr<Gaussian1FactorDynamics> dynamics_;
+		shared_ptr<Gaussian1FactorDynamics> dynamics_;
 	};
 
 	// inline definitions
-	inline boost::shared_ptr<OneFactorModel::ShortRateDynamics>	GeneralizedG1::dynamics() const
+	inline shared_ptr<OneFactorModel::ShortRateDynamics>	GeneralizedG1::dynamics() const
 	{
-		return boost::shared_ptr<ShortRateDynamics>( new Dynamics( dynamics_ ) );
+		return shared_ptr<ShortRateDynamics>( new Dynamics( dynamics_ ) );
 	}
 }
 

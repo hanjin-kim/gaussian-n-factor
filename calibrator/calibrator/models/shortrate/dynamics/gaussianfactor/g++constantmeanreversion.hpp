@@ -21,25 +21,26 @@ namespace HJCALIBRATOR
 
 		virtual ~GPPConstantMeanReversion() {}
 
+		virtual Real integralVariance( Size i, Size j, Time s, Time t ) const override;
+		virtual Real variance( Size i, Size j, Time s, Time t ) const override;
+
 	protected:
-		GPPConstantMeanReversion() : GaussianFactorDynamics() {}
+		GPPConstantMeanReversion() {}
 
 	private:
 		virtual Real E( const Parameter& a, Time s, Time t ) const override;
 		virtual Real B( const Parameter& a, Time s, Time t ) const override;
-		virtual Real integralVariance( Size i, Size j, Time s, Time t ) const override;
-		virtual Real variance( Size i, Size j, Time s, Time t ) const override;
 	};
 
-	class G1ConstantMeanReversionDynamics : public GPPConstantMeanReversion, public Gaussian1FactorDynamics
+	class G1ConstantMeanReversionDynamics : public Gaussian1FactorDynamics, public GPPConstantMeanReversion
 	{
 	public:
 		G1ConstantMeanReversionDynamics( const Handle<YieldTermStructure>& termStructure,
 										 Real a,
 										 const Parameter& sigma )
-			: GaussianFactorDynamics( termStructure, 
-									  { ConstantParameter( a, NoConstraint() ) }, 
-									  { sigma }, 
+			: GaussianFactorDynamics( termStructure,
+									  { ConstantParameter( a, NoConstraint() ) },
+									  { sigma },
 									  Matrix( 1, 1, 1 ) )
 		{}
 

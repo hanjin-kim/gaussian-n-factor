@@ -26,13 +26,9 @@ namespace HJCALIBRATOR
 	{
 		for ( int i = 0; i < rho.rows(); i++ )
 		{
-			rho_.push_back( ParamVector() );
-			for ( int j = 0; j < rho.rows(); j++ )
+			for ( int j = i; j < rho.columns(); j++ )
 			{
-				if ( i >= j )
-					rho_[i].push_back( ConstantParameter( rho[i][j], BoundaryConstraint( -1, 1 ) ) );
-				else
-					rho_[i].push_back( NullParameter() );
+				rho_[std::minmax(i,j)] = ConstantParameter( rho[i][j], BoundaryConstraint( -1, 1 ) );
 			}
 		}
 	}
@@ -55,16 +51,17 @@ namespace HJCALIBRATOR
 
 	void GaussianFactorDynamics::rho( const Parameter& rho, Size i, Size j )
 	{
-		QL_ENSURE( rho_.size() > i && rho_[i].size() > j,
-				   "Memory for the [" << i << "," << j << "]-th correlation parameter is not allocated" );
-
-		if ( i > j ) rho_[i][j] = rho;
-		else rho_[j][i] = rho;
+		rho_[std::minmax( i, j )] = rho;
 	}
 
 	Parameter GaussianFactorDynamics::rho( Size i, Size j ) const
 	{
-		return i > j ? rho_[i][j] : rho_[j][i];
+		auto it = rho_.find( std::minmax( i, j ) );
+
+		QL_ENSURE( it != rho_.end(),
+				   "(" << i << "," << " j)-th correlation factor not found." );
+
+		return it->second;
 	}
 
 	Real GaussianFactorDynamics::A( Time t, Time T ) const
@@ -145,7 +142,7 @@ namespace HJCALIBRATOR
 
 	Real GaussianFactorDynamics::B( const Parameter& a, Time t, Time T ) const
 	{
-		auto lambda = [&, a, T]( Time u )
+		auto lambda = [&, t, T]( Time u )
 		{
 			return 1 / E( a, t, u );
 		};
@@ -153,27 +150,28 @@ namespace HJCALIBRATOR
 		return integrator_( lambda, t, T );
 	}
 
-	Real GaussianFactorDynamics::MT( Size i, Time T, Time s, Time t ) const
+	Real GaussianFactorDynamics::meanTforward( Size i, Time T, Time s, Time t ) const
 	{
 		Real intsum = 0;
 		for ( Size j = 0; j < dimension(); j++ )
 		{
-			intsum += MT( i, j, T, s, t );
+			intsum += rho(i,j)(0.0) * meanTforward( i, j, T, s, t );
 		}
 
-		return intsum;
+		return - intsum;
 	}
 
-	Real GaussianFactorDynamics::MT( Size i, Size j, Time T, Time s, Time t ) const
+	Real GaussianFactorDynamics::meanTforward( Size i, Size j, Time T, Time s, Time t ) const
 	{
+		const Parameter& a_i = a_[i];
 		const Parameter& a_j = a_[j];
 
 		const Parameter& sigma_i = sigma_[i];
 		const Parameter& sigma_j = sigma_[j];
 
-		auto integrand = [&, a_j, sigma_i, sigma_j, T]( Time u )
+		auto integrand = [&, T]( Time u )
 		{
-			return sigma_i( u ) * sigma_j( u ) * B( a_j, u, T );
+			return sigma_i( u ) * sigma_j( u ) * B( a_j, u, T ) / E(a_i, u, t);
 		};
 
 		return integrator_( integrand, s, t );
@@ -187,7 +185,7 @@ namespace HJCALIBRATOR
 		const Parameter& sigma_i = sigma_[i];
 		const Parameter& sigma_j = sigma_[j];
 
-		auto integrand = [&, a_i, a_j, sigma_i, sigma_j, t]( Time u )
+		auto integrand = [&, t]( Time u )
 		{
 			return sigma_i( u ) * sigma_j( u ) * B( a_i, a_j, u, t );
 		};
@@ -203,7 +201,7 @@ namespace HJCALIBRATOR
 		const Parameter& sigma_i = sigma_[i];
 		const Parameter& sigma_j = sigma_[j];
 
-		auto integrand = [&, a_i, a_j, sigma_i, sigma_j, t]( Time u )
+		auto integrand = [&, t]( Time u )
 		{
 			return sigma_i( u ) * sigma_j( u ) / E( a_i, a_j, u, t );
 		};
@@ -220,7 +218,7 @@ namespace HJCALIBRATOR
 		const Parameter& sigma_i = sigma_[i];
 		const Parameter& sigma_j = sigma_[j];
 
-		auto integrand = [&, a_i, a_j, sigma_i, sigma_j, t]( Time u, Time s )
+		auto integrand = [&, t]( Time u, Time s )
 		{
 			return sigma_i( u ) * sigma_j( u )
 				* (1 / E( a_i, u, s ) + 1 / E( a_j, u, s ))

@@ -55,7 +55,11 @@ namespace HJCALIBRATOR
 
 		Real E( Size i, Time s, Time t ) const { return E( a_[i], s, t ); }
 		Real B( Size i, Time s, Time t ) const { return B( a_[i], s, t ); }
-		Real MT( Size i, Time T, Time s, Time t ) const;
+		Real meanTforward( Size i, Time T, Time s, Time t ) const;
+
+		virtual Real meanTforward( Size i, Size j, Time T, Time s, Time t ) const;
+		virtual Real integralVariance( Size i, Size j, Time s, Time t ) const;
+		virtual Real variance( Size i, Size j, Time s, Time t ) const;
 
 		virtual Real A( Time t, Time T ) const;
 		
@@ -69,9 +73,6 @@ namespace HJCALIBRATOR
 		virtual Real B( const Parameter& a, Time s, Time t ) const;
 		virtual Real B( const Parameter& ai, const Parameter& aj, Time s, Time t ) const;
 
-		virtual Real MT( Size i, Size j, Time T, Time s, Time t ) const;
-		virtual Real integralVariance( Size i, Size j, Time s, Time t ) const;
-		virtual Real variance( Size i, Size j, Time s, Time t ) const;
 		virtual Real phi( Size i, Size j, Time t ) const;
 
 		GaussKronrodAdaptive integrator_;
@@ -82,7 +83,7 @@ namespace HJCALIBRATOR
 		Handle<YieldTermStructure> termStructure_;
 		ParamVector a_;
 		ParamVector sigma_;
-		ParamMatrix rho_;
+		std::map<std::pair<Size, Size>, Parameter> rho_;
 	};
 
 	
@@ -118,7 +119,6 @@ namespace HJCALIBRATOR
 	protected:
 		Gaussian2FactorDynamics() {} // for virtual inheritance
 		
-	private:
 		Matrix getCorrelationMatrix( Real rho )
 		{
 			Matrix ret( 2, 2, 1 );

@@ -30,13 +30,13 @@ namespace HJCALIBRATOR
 
 		virtual Real integral( Time t0, Time t1 ) const
 		{
-			boost::shared_ptr<Impl> impl = boost::static_pointer_cast<Impl>(impl_);
+			shared_ptr<Impl> impl = boost::static_pointer_cast<Impl>(impl_);
 			return impl->integral( params_, t0, t1 );
 		}
 
 	protected :
 		IntegrableParameter( Size size,
-							 const boost::shared_ptr<Impl>& impl,
+							 const shared_ptr<Impl>& impl,
 							 const Constraint& constraint )
 			: Parameter( size, impl, constraint )
 		{}

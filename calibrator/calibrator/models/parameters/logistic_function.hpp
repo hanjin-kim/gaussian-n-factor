@@ -27,7 +27,7 @@ namespace HJCALIBRATOR
 		};
 		LogisticFunctionParameter(const Array& params, const Constraint& constraint = NoConstraint())
 			: Parameter( params.size(), 
-						 boost::shared_ptr<Parameter::Impl>( new LogisticFunctionParameter::Impl() ), constraint )
+						 shared_ptr<Parameter::Impl>( new LogisticFunctionParameter::Impl() ), constraint )
 		{}
 	};
 }

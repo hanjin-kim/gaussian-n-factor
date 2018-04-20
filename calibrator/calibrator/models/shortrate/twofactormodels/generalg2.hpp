@@ -1,7 +1,12 @@
 #ifndef CALIBRATOR_MODELS_SHORTRATE_TWOFACTORMODELS_GENERALG2_HPP
 #define CALIBRATOR_MODELS_SHORTRATE_TWOFACTORMODELS_GENERALG2_HPP
 
+#include <boost/make_shared.hpp>
+
 #include <ql/models/shortrate/twofactormodel.hpp>
+#include <ql/instruments/swaption.hpp>
+#include <ql/math/solver1d.hpp>
+#include <ql/math/integrals/kronrodintegral.hpp>
 
 #include <calibrator/global.hpp>
 #include <calibrator/processes/generalornsteinuhlenbeckprocess.hpp>
@@ -26,26 +31,35 @@ namespace HJCALIBRATOR
 	\bug This class was not tested enough to guarantee
 	its functionality.
 
+	\todo Tree implementation
+
 	\ingroup shortrate
 	*/
 	class GeneralizedG2 : public TwoFactorModel, public AffineModel, public TermStructureConsistentModel
 	{
 		class Dynamics;
 
-		boost::shared_ptr<Gaussian2FactorDynamics> dynamics_;
+		shared_ptr<Gaussian2FactorDynamics> dynamics_;
 
 	public:
-		GeneralizedG2( std::shared_ptr<Gaussian2FactorDynamics> dynamics );
+		GeneralizedG2( shared_ptr<Gaussian2FactorDynamics> dynamics,
+					   Real integralSignificance = 10, 
+					   shared_ptr<Integrator> integrator = boost::make_shared<GaussKronrodAdaptive>( GaussKronrodAdaptive( 1.e-8, 10000 ) ) );
 		virtual ~GeneralizedG2() {}
 
 		// TwoFactorModel virtual override
-		boost::shared_ptr<Lattice> tree( const TimeGrid& grid ) const override
+		shared_ptr<Lattice> tree( const TimeGrid& grid ) const override
 		{
 			// todo
-			return boost::shared_ptr<Lattice>();
+			return shared_ptr<Lattice>();
 		};
 
-		boost::shared_ptr<ShortRateDynamics> dynamics() const;
+		shared_ptr<ShortRateDynamics> dynamics() const;
+
+		virtual DiscountFactor discount( Time t ) const override
+		{
+			return termStructure()->discount( t );
+		}
 
 		virtual Real discountBond( Time now,
 								   Time maturity,
@@ -60,9 +74,13 @@ namespace HJCALIBRATOR
 										 Time maturity, Time bondStart,
 										 Time bondMaturity ) const override;
 
-		// pure virtual for now (need to obtain a general form)
-		virtual Real swaption( Option::Type type, Real strike,
-							   Time maturity, Time swapTenor ) const = 0; 
+		virtual Real swaption( const Swaption::arguments& arg, Real strike ) const;
+
+		Parameter a() const { return a_; }
+		Parameter b() const { return b_; }
+		Parameter sigma() const { return sigma_; }
+		Parameter eta() const { return eta_; }
+		Parameter rho() const { return rho_; }
 
 	protected:
 		// CalibratedModel virtual override
@@ -76,16 +94,18 @@ namespace HJCALIBRATOR
 		Parameter& eta_;
 		Parameter& rho_;
 
-		GaussKronrodAdaptive integrator_;
+		Real integralSignificance_;
+
+		shared_ptr<Integrator> integrator_;
 	};
 
 	//! Short-rate dynamics in the time-dependent Hull-White model
 	/*! The short-rate follows an time-dependent Hull-White process */
 	class GeneralizedG2::Dynamics : public TwoFactorModel::ShortRateDynamics {
 	public:
-		Dynamics( const boost::shared_ptr<Gaussian2FactorDynamics> dynamics )
-			: ShortRateDynamics( boost::shared_ptr<StochasticProcess1D>( new GeneralizedOrnsteinUhlenbeckProcess( dynamics->a( 0 ), dynamics->sigma( 0 ) ) ),
-								 boost::shared_ptr<StochasticProcess1D>( new GeneralizedOrnsteinUhlenbeckProcess( dynamics->a( 1 ), dynamics->sigma( 1 ) ) ),
+		Dynamics( const shared_ptr<Gaussian2FactorDynamics> dynamics )
+			: ShortRateDynamics( shared_ptr<StochasticProcess1D>( new GeneralizedOrnsteinUhlenbeckProcess( dynamics->a( 0 ), dynamics->sigma( 0 ) ) ),
+								 shared_ptr<StochasticProcess1D>( new GeneralizedOrnsteinUhlenbeckProcess( dynamics->a( 1 ), dynamics->sigma( 1 ) ) ),
 								 dynamics->rho( 0, 1 )(0.0) )
 			, dynamics_( dynamics )
 		{}
@@ -94,13 +114,13 @@ namespace HJCALIBRATOR
 			return x + y + dynamics_->phi( t );
 		}
 
-		boost::shared_ptr<Gaussian2FactorDynamics> dynamics_;
+		shared_ptr<Gaussian2FactorDynamics> dynamics_;
 	};
 
 	// inline definitions
-	inline boost::shared_ptr<TwoFactorModel::ShortRateDynamics>	GeneralizedG2::dynamics() const
+	inline shared_ptr<TwoFactorModel::ShortRateDynamics>	GeneralizedG2::dynamics() const
 	{
-		return boost::shared_ptr<ShortRateDynamics>( new Dynamics( dynamics_ ) );
+		return shared_ptr<ShortRateDynamics>( new Dynamics( dynamics_ ) );
 	}
 }
 #endif // !CALIBRATOR_MODELS_SHORTRATE_TWOFACTORMODELS_GENERALG2_HPP

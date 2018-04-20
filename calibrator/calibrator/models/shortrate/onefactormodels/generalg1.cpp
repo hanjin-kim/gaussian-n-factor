@@ -4,7 +4,7 @@
 
 namespace HJCALIBRATOR
 {
-	GeneralizedG1::GeneralizedG1( std::shared_ptr<Gaussian1FactorDynamics> dynamics )
+	GeneralizedG1::GeneralizedG1( shared_ptr<Gaussian1FactorDynamics> dynamics )
 		: OneFactorAffineModel( 2 )
 		, TermStructureConsistentModel( dynamics->termStructure() )
 		, a_( arguments_[0] ), sigma_( arguments_[1] )
