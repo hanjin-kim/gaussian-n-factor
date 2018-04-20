@@ -36,6 +36,40 @@ namespace HJCALIBRATOR
 		return rv;
 	}
 
+	Real GPPPCMRPCV::meanTforward( Size i, Size j, Time T, Time s, Time t ) const
+	{
+		Real ai = a( i, 0.0 );
+		Real aj = a( j, 0.0 );
+
+		const Parameter& sigma_i = sigma( i );
+		const Parameter& sigma_j = sigma( j );
+
+		RealVector::const_iterator it_nodes = combined_nodes_[i][j].begin();
+		while ( it_nodes != combined_nodes_[i][j].end() && *it_nodes < s )
+		{
+			it_nodes++;
+		}
+
+		Real intsum = 0;
+
+		Real begin = s;
+
+		while ( it_nodes != combined_nodes_[i][j].end() && *it_nodes < t )
+		{
+			Real end = *it_nodes;
+			Real mid = (end + begin) / 2.;
+
+			Real integral = (1 - exp( -ai * (end - begin) )) / ai / aj
+				- (exp( -aj * (T - end) ) - exp( -aj * T - ai * end + (ai + aj)*begin )) / (ai + aj) / aj;
+
+			intsum += sigma_i( mid )*sigma_j( mid )*integral;
+			begin = end;
+			it_nodes++;
+		}
+
+		return intsum;
+	}
+
 	Real GPPPCMRPCV::integralVariance( Size i, Size j, Time s, Time t ) const
 	{
 		Real ai = a( i, 0.0 );
