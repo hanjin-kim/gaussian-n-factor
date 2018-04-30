@@ -72,8 +72,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\Libraries\Boost\boost_1_65_1;D:\Libraries\QuantLib\QuantLib-1.11;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Libraries\QuantLib\QuantLib-1.11\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\Libraries\include;$(ProjectDir);$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Libraries\lib;$(LibraryPath)</LibraryPath>
     <OutDir>.\lib</OutDir>
     <TargetName>lib$(ProjectName)_$(Platform)_$(Configuration)</TargetName>
   </PropertyGroup>
@@ -86,6 +86,10 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>D:\Libraries\include;$(ProjectDir);$(IncludePath)</IncludePath>
+    <LibraryPath>D:\Libraries\lib;$(LibraryPath)</LibraryPath>
+    <TargetName>lib$(ProjectName)_$(Platform)_$(Configuration)</TargetName>
+    <OutDir>.\lib</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -117,7 +121,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions);_SCL_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <DisableSpecificWarnings>4250;4250</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4250;4250;2450</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -126,7 +130,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -153,7 +157,7 @@
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <DisableSpecificWarnings>;4250</DisableSpecificWarnings>
+      <DisableSpecificWarnings>;4250;2450</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -164,9 +168,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="calibrator\global.hpp" />
-    <ClInclude Include="calibrator\math\integration\montecarlo.hpp" />
-    <ClInclude Include="calibrator\models\integrableparameter.hpp" />
-    <ClInclude Include="calibrator\models\parameters\logistic_function.hpp" />
     <ClInclude Include="calibrator\models\shortrate\dynamics\gaussianfactordynamics.hpp" />
     <ClInclude Include="calibrator\models\shortrate\dynamics\gaussianfactor\g++cmr_pcv.hpp" />
     <ClInclude Include="calibrator\models\shortrate\dynamics\gaussianfactor\g++constantmeanreversion.hpp" />
@@ -174,6 +175,7 @@
     <ClInclude Include="calibrator\models\shortrate\onefactormodels\generalg1.hpp" />
     <ClInclude Include="calibrator\models\shortrate\twofactormodels\generalg2.hpp" />
     <ClInclude Include="calibrator\pricingengines\swaption\generalg2swaptionengine.hpp" />
+    <ClInclude Include="calibrator\processes\gaussianfactorprocess.hpp" />
     <ClInclude Include="calibrator\processes\generalornsteinuhlenbeckprocess.hpp" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -192,6 +194,9 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

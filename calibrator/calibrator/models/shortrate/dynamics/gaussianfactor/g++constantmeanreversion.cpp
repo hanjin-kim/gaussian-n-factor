@@ -14,14 +14,14 @@ namespace HJCALIBRATOR
 		return std::move( a_ );
 	}
 
-	Real GPPConstantMeanReversion::E( const Parameter & a, Time s, Time t ) const
+	Real GPPConstantMeanReversion::E( Size i, Time s, Time t ) const
 	{
-		return exp( a( 0.0 ) * (t - s) );
+		return exp( a(i)(0.0) * (t - s) );
 	}
 
-	Real GPPConstantMeanReversion::B( const Parameter & a, Time s, Time t ) const
+	Real GPPConstantMeanReversion::B( Size i, Time s, Time t ) const
 	{
-		Real aval = a( 0.0 );
+		Real aval = a( i )(0.0);
 		return (1 - exp( -aval * (t - s) )) / aval;
 	}
 
@@ -55,5 +55,23 @@ namespace HJCALIBRATOR
 		};
 
 		return integrator_( integrand, s, t );
+	}
+	Real GPPConstantMeanReversion::phi( Size i, Size j, Time t ) const
+	{
+		Real a_i = a( i )(0.0);
+		Real a_j = a( j )(0.0);
+
+		const Parameter& sigma_i = sigma( i );
+		const Parameter& sigma_j = sigma( j );
+
+		auto integrand = [t, a_i, a_j, &sigma_i, &sigma_j](Time u)
+		{
+			Real dt = t - u;
+			return sigma_i( u ) * sigma_j( u )
+				* ((exp( -a_i * dt ) - exp( -(a_i + a_j)*dt )) / a_i
+					+ (exp( -a_j * dt ) - exp( -(a_i + a_j)*dt ) / a_j));
+		};
+
+		return integrator_( integrand, 0, t );
 	}
 }

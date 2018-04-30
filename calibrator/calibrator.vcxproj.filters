@@ -24,13 +24,7 @@
     <ClInclude Include="calibrator\global.hpp">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="calibrator\models\parameters\logistic_function.hpp">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
     <ClInclude Include="calibrator\processes\generalornsteinuhlenbeckprocess.hpp">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="calibrator\math\integration\montecarlo.hpp">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="calibrator\models\shortrate\dynamics\gaussianfactordynamics.hpp">
@@ -54,7 +48,7 @@
     <ClInclude Include="calibrator\pricingengines\swaption\generalg2swaptionengine.hpp">
       <Filter>헤더 파일</Filter>
     </ClInclude>
-    <ClInclude Include="calibrator\models\integrableparameter.hpp">
+    <ClInclude Include="calibrator\processes\gaussianfactorprocess.hpp">
       <Filter>헤더 파일</Filter>
     </ClInclude>
   </ItemGroup>
@@ -83,5 +77,8 @@
     <ClCompile Include="calibrator\models\shortrate\twofactormodels\generalg2.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

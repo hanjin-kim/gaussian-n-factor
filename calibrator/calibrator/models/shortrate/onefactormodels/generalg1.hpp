@@ -38,6 +38,9 @@ namespace HJCALIBRATOR
 										 Time maturity, Time bondStart,
 										 Time bondMaturity ) const override;
 
+		Parameter a() const { return a_; }
+		Parameter sigma() const { return sigma_; }
+
 	private :
 		// CalibratedModel virtual override
 		virtual void generateArguments() override;

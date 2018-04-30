@@ -3,43 +3,14 @@
 
 #include <boost/function.hpp>
 
-#include <gsl/gsl_integration.h>
-
 #include <ql/stochasticprocess.hpp>
-#include <ql/math/integrals/simpsonintegral.hpp>
+#include <ql/models/parameter.hpp>
 #include <ql/math/integrals/kronrodintegral.hpp>
 
 #include <calibrator/global.hpp>
-#include <calibrator/models/integrableparameter.hpp>
-#include <calibrator/models/shortrate/dynamics/gaussianfactordynamics.hpp>
 
 namespace HJCALIBRATOR
 {
-	// Use in combination with boost::bind.
-	template<class F>
-	static double gslFunctionAdapter( double x, void* p )
-	{
-		// Here I do recover the "right" pointer, safer to use static_cast
-		// than reinterpret_cast.
-		F* function = static_cast<F*>(p);
-		return (*function)(x);
-	}
-
-	template<class F>
-	gsl_function convertToGslFunction( const F& f )
-	{
-		gsl_function gslFunction;
-
-		const void* p = &f;
-		assert( p != 0 );
-
-		gslFunction.function = &gslFunctionAdapter<F>;
-		// Just to eliminate the const.
-		gslFunction.params = const_cast<void*>(p);
-
-		return gslFunction;
-	}
-
 	//! Time-dependelt Ornstein-Uhlenbeck process class
 	/*! This class describes the (constrained) time-dependent Ornstein-Uhlenbeck process
 	described by
@@ -55,16 +26,14 @@ namespace HJCALIBRATOR
 	class GeneralizedOrnsteinUhlenbeckProcess : public StochasticProcess1D
 	{
 	public :
-		GeneralizedOrnsteinUhlenbeckProcess( const IntegrableParameter& a, // must be an IntegrableParameter
-											 const Parameter& sigma,
-											 const Real x0 = 0 );
-
 		GeneralizedOrnsteinUhlenbeckProcess( const Parameter& a, // must be an IntegrableParameter
 											 const Parameter& sigma,
 											 const Real x0 = 0 )
+			: a_(a), sigma_(sigma), x0_(x0)
+			, integrator_(GaussKronrodAdaptive( GaussKronrodAdaptive( 1.e-8, 10000 ) ))
 		{}
 
-		virtual ~GeneralizedOrnsteinUhlenbeckProcess();
+		virtual ~GeneralizedOrnsteinUhlenbeckProcess() {}
 
 		//! \name StochasticProcess1D interface
 		//@{
@@ -76,7 +45,7 @@ namespace HJCALIBRATOR
 		Real stdDeviation( Time t0, Real x0, Time dt ) const override;
 		//@}
 
-		IntegrableParameter a() { return a_; }
+		Parameter a() { return a_; }
 		Parameter sigma() { return sigma_; }
 
 		Real a( Time t ) { return a_( t ); }
@@ -87,13 +56,10 @@ namespace HJCALIBRATOR
 		Real VrIntegrand( Time t );
 
 		Real x0_;
-		IntegrableParameter a_;
+		Parameter a_;
 		Parameter sigma_;
 
-		gsl_integration_workspace* int_wrkspcs_;
-		gsl_function integrand_Vr_;
-
-		//boost::function<Real( Real )> Vrintegrand_; // variance integrand
+		GaussKronrodAdaptive integrator_;
 	};
 
 	// inline definitions
@@ -110,12 +76,17 @@ namespace HJCALIBRATOR
 
 	inline Real GeneralizedOrnsteinUhlenbeckProcess::variance( Time t0, Real x0, Time dt ) const
 	{
-		Real Et = E( 0, t0 + dt );
+		Time t = t0 + dt;
+
+		auto integrand = [&, t]( Time u )
+		{
+			Real sigma = sigma_( u );
+			Real Etu = E( u, t );
+
+			return sigma * sigma / Etu / Etu;
+		};
 		
-		Real result, error;
-		gsl_integration_qags( &integrand_Vr_, t0, t0 + dt, 0, 1e-7, 1000, int_wrkspcs_, &result, &error );
-		
-		return result / (Et * Et);
+		return integrator_( integrand, t0, t );
 	}
 
 	inline Real GeneralizedOrnsteinUhlenbeckProcess::stdDeviation( Time t0, Real x0, Time dt ) const
@@ -136,7 +107,14 @@ namespace HJCALIBRATOR
 
 	inline Real GeneralizedOrnsteinUhlenbeckProcess::E( Time t0, Time t1 ) const
 	{
-		return exp( a_.integral( t0, t1 ) );
+		const Parameter& a = a_;
+
+		auto integrand = [&a]( Time u )
+		{
+			return a( u );
+		};
+
+		return integrator_( integrand, t0, t1 );
 	}
 
 	inline Real GeneralizedOrnsteinUhlenbeckProcess::VrIntegrand( Time t )

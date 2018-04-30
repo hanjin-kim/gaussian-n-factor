@@ -21,14 +21,10 @@ namespace HJCALIBRATOR
 
 			PiecewiseConstantParameter tmpparam( nodes, PositiveConstraint() );
 
-			Real a = tmpparam( 1.2 );
-
 			for ( Size j = 0; j < initval.size(); j++ )
 			{
 				tmpparam.setParam( j, initval[j] );
 			}
-
-			Real b = tmpparam( 1.2 );
 
 			rv.push_back( tmpparam );
 		}
@@ -59,13 +55,29 @@ namespace HJCALIBRATOR
 			Real end = *it_nodes;
 			Real mid = (end + begin) / 2.;
 
-			Real integral = (1 - exp( -ai * (end - begin) )) / ai / aj
-				- (exp( -aj * (T - end) ) - exp( -aj * T - ai * end + (ai + aj)*begin )) / (ai + aj) / aj;
+			Real et = t - end;
+			Real bt = t - begin;
 
-			intsum += sigma_i( mid )*sigma_j( mid )*integral;
+			Real integral = (exp( -ai * et ) - exp( -ai * bt )) / ai / aj
+				- (exp( (ai + aj)*end ) - exp( (ai + aj)*begin )) * exp( -ai * t - aj * T ) / (ai + aj) / aj;
+
+			Real sigmai = sigma_i( mid );
+			Real sigmaj = sigma_j( mid );
+
+			intsum += sigmai*sigmaj*integral;
 			begin = end;
 			it_nodes++;
 		}
+
+		Real end = t;
+		Real mid = (t + begin) / 2.;
+
+		Real sigmai = sigma_i( mid );
+		Real sigmaj = sigma_j( mid );
+
+		intsum += sigmai*sigmaj
+			*((1 - exp( -ai * (end - begin) )) / ai / aj
+			   - (exp( (ai + aj)*end ) - exp( (ai + aj)*begin )) * exp( -ai * t - aj * T ) / (ai + aj) / aj);
 
 		return intsum;
 	}
@@ -94,15 +106,20 @@ namespace HJCALIBRATOR
 			Real mid = (end + begin) / 2.;
 			Real dt = end - begin;
 
+			Real et = t - end;
+			Real bt = t - begin;
+
 			Real sigmai = sigma_i( mid );
 			Real sigmaj = sigma_j( mid );
+
+			Real asum = ai + aj;
 			Real c = sigmai * sigmaj / ai / aj;
 
 
 			intsum += c * (dt
-							+ (1 - exp( -(ai + aj) * dt )) / (ai + aj)
-							- (1 - exp( -ai * dt )) / ai
-							- (1 - exp( -aj * dt )) / aj);
+							+ (exp( -asum * et ) - exp( -asum * bt )) / asum
+							- (exp( -ai * et ) - exp( -ai * bt )) / ai
+							- (exp( -aj * et ) - exp( -aj * bt )) / aj);
 			begin = end;
 			it_nodes++;
 		}
@@ -144,7 +161,11 @@ namespace HJCALIBRATOR
 		{
 			Real end = *it_nodes;
 			Real mid = (end + begin) / 2.;
-			intsum += sigma_i( mid )*sigma_j( mid )*(1 - exp( -asum * (end - begin) )) / asum;
+
+			Real et = t - end;
+			Real bt = t - begin;
+
+			intsum += sigma_i( mid )*sigma_j( mid )*(exp( -asum * et ) - exp( -asum * bt )) / asum;
 			begin = end;
 			it_nodes++;
 		}
@@ -153,6 +174,53 @@ namespace HJCALIBRATOR
 		Real mid = (t + begin) / 2.;
 
 		intsum += sigma_i( mid )*sigma_j( mid )*(1 - exp( -asum * (end - begin) )) / asum;
+
+		return intsum;
+	}
+
+	Real GPPPCMRPCV::phi( Size i, Size j, Time t ) const
+	{
+		Real a_i = a( i )(0.0);
+		Real a_j = a( j )(0.0);
+
+		const Parameter& sigma_i = sigma( i );
+		const Parameter& sigma_j = sigma( j );
+
+		Time s = 0;
+
+		RealVector::const_iterator it_nodes = combined_nodes_[i][j].begin();
+		while ( it_nodes != combined_nodes_[i][j].end() && *it_nodes < s )
+		{
+			it_nodes++;
+		}
+
+		Real intsum = 0;
+
+		Real begin = s;
+		while ( it_nodes != combined_nodes_[i][j].end() && *it_nodes < t )
+		{
+			Real end = *it_nodes;
+			Real mid = (end + begin) / 2.;
+
+			Real et = t - end;
+			Real bt = t - begin;
+
+			intsum += sigma_i( mid ) * sigma_j( mid )
+				* ((exp( -a_i * et ) - exp( -a_i * bt )) / a_i / a_i
+					- (exp( -(a_i + a_j) * et ) - exp( -(a_i + a_j) * bt )) / a_i / a_j
+					+ (exp( -a_j * et ) - exp( -a_j * bt )) / a_j / a_j);
+			
+			begin = end;
+			it_nodes++;
+		}
+
+		Real end = t;
+		Real mid = (t + begin) / 2.;
+		Real bt = t - begin;
+
+		intsum += sigma_i( mid ) * sigma_j( mid ) * ((1 - exp( -a_i * bt )) / a_i / a_i
+													  - (1 - exp( -(a_i + a_j) * bt )) / a_i / a_j
+													  + (1 - exp( -a_j * bt )) / a_j / a_j);
 
 		return intsum;
 	}

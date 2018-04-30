@@ -22,10 +22,11 @@ namespace HJCALIBRATOR
 		virtual Real meanTforward( Size i, Size j, Time T, Time s, Time t ) const override;
 		virtual Real integralVariance( Size i, Size j, Time s, Time t ) const override;
 		virtual Real variance( Size i, Size j, Time s, Time t ) const override;
-		//virtual Real phi( Size i, Size j, Time t ) const override;
 
 	protected:
 		GPPConstantDynamics() {}
+
+		virtual Real phi( Size i, Size j, Time t ) const override;
 	};
 
 	class G1ConstantDynamics : public Gaussian1FactorDynamics, public GPPConstantDynamics

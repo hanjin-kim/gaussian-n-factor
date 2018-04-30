@@ -1,8 +1,6 @@
 #ifndef CALIBRATOR_MODELS_SHORTRATE_DYNAMICS_GAUSSIANFACTOR_GPPCONSTANTMEANREVERSION_HPP
 #define CALIBRATOR_MODELS_SHORTRATE_DYNAMICS_GAUSSIANFACTOR_GPPCONSTANTMEANREVERSION_HPP
 
-#include <gsl/gsl_integration.h>
-
 #include <calibrator/models/shortrate/dynamics/gaussianfactordynamics.hpp>
 
 namespace HJCALIBRATOR
@@ -21,15 +19,17 @@ namespace HJCALIBRATOR
 
 		virtual ~GPPConstantMeanReversion() {}
 
+
+		virtual Real E( Size i, Time s, Time t ) const;
+		virtual Real B( Size i, Time s, Time t ) const;
+
 		virtual Real integralVariance( Size i, Size j, Time s, Time t ) const override;
 		virtual Real variance( Size i, Size j, Time s, Time t ) const override;
 
 	protected:
 		GPPConstantMeanReversion() {}
 
-	private:
-		virtual Real E( const Parameter& a, Time s, Time t ) const override;
-		virtual Real B( const Parameter& a, Time s, Time t ) const override;
+		virtual Real phi( Size i, Size j, Time t ) const;
 	};
 
 	class G1ConstantMeanReversionDynamics : public Gaussian1FactorDynamics, public GPPConstantMeanReversion

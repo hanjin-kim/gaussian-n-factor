@@ -30,13 +30,14 @@ namespace HJCALIBRATOR
 		virtual Real meanTforward( Size i, Size j, Time T, Time s, Time t ) const override;
 		virtual Real integralVariance( Size i, Size j, Time s, Time t ) const override;
 		virtual Real variance( Size i, Size j, Time s, Time t ) const override;
-		//virtual Real phi( Size i, Size j, Time t ) const override;
 
 	protected:
 		GPPPCMRPCV( const std::vector<RealVector>& sigma_nodes )
 		{
 			combineNodes( sigma_nodes );
 		}
+
+		virtual Real phi( Size i, Size j, Time t ) const override;
 
 	private:
 		void combineNodes( const std::vector<RealVector>& sigma_nodes );
@@ -50,7 +51,7 @@ namespace HJCALIBRATOR
 					 const RealVector& sigma_node,
 					 const RealVector& initial_sigma )
 			: GaussianFactorDynamics( termStructure,
-									  { ConstantParameter( a, NoConstraint() ) },
+									  { ConstantParameter( a, PositiveConstraint() ) },
 									  convertParamVector( { sigma_node }, { initial_sigma } ),
 									  Matrix( 1, 1, 1))
 			, GPPPCMRPCV( { sigma_node } )
@@ -71,10 +72,10 @@ namespace HJCALIBRATOR
 					 const RealVector& initial_eta,
 					 Real rho )
 			: GaussianFactorDynamics( termStructure,
-									   { ConstantParameter( a, NoConstraint() ), ConstantParameter( b, NoConstraint() ) },
+									   { ConstantParameter( a, PositiveConstraint() ), ConstantParameter( b, PositiveConstraint() ) },
 									   convertParamVector( { sigma_node, eta_node }, { initial_sigma, initial_eta } ),
 									   getCorrelationMatrix( rho ) )
-			, GPPPCMRPCV( { sigma_node } )
+			, GPPPCMRPCV( { sigma_node, eta_node } )
 		{}
 
 		virtual ~G2PPPCMRPCV() {}

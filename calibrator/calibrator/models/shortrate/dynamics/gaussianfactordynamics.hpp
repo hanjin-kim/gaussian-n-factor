@@ -53,8 +53,10 @@ namespace HJCALIBRATOR
 
 		Handle<YieldTermStructure> termStructure() const { return termStructure_; }
 
-		Real E( Size i, Time s, Time t ) const { return E( a_[i], s, t ); }
-		Real B( Size i, Time s, Time t ) const { return B( a_[i], s, t ); }
+		virtual Real E( Size i, Time s, Time t ) const;
+		virtual Real E( Size i, Size j, Time s, Time t ) const;
+		virtual Real B( Size i, Time s, Time t ) const;
+		virtual Real B( Size i, Size j, Time s, Time t ) const;
 		Real meanTforward( Size i, Time T, Time s, Time t ) const;
 
 		virtual Real meanTforward( Size i, Size j, Time T, Time s, Time t ) const;
@@ -68,15 +70,10 @@ namespace HJCALIBRATOR
 		virtual Real integralVariance( Time s, Time t ) const;
 
 	protected:
-		virtual Real E( const Parameter& a, Time s, Time t ) const;
-		virtual Real E( const Parameter& ai, const Parameter& aj, Time s, Time t ) const;
-		virtual Real B( const Parameter& a, Time s, Time t ) const;
-		virtual Real B( const Parameter& ai, const Parameter& aj, Time s, Time t ) const;
-
 		virtual Real phi( Size i, Size j, Time t ) const;
 
 		GaussKronrodAdaptive integrator_;
-		//SimpsonIntegral integrator_;
+
 	private:
 		void setupCorrelMatrix( const Matrix& rho );
 
@@ -129,15 +126,14 @@ namespace HJCALIBRATOR
 		}
 	};
 	
-
-	inline Real GaussianFactorDynamics::E( const Parameter& ai, const Parameter& aj, Time s, Time t ) const
+	inline Real GaussianFactorDynamics::E( Size i, Size j, Time s, Time t ) const
 	{
-		return E( ai, s, t ) * E( aj, s, t );
+		return E( i, s, t ) * E( j, s, t );
 	}
 
-	inline Real GaussianFactorDynamics::B( const Parameter& ai, const Parameter& aj, Time s, Time t ) const
+	inline Real GaussianFactorDynamics::B( Size i, Size j, Time s, Time t ) const
 	{
-		return B( ai, s, t ) * B( aj, s, t );
+		return B( i, s, t ) * B( j, s, t );
 	}
 }
 

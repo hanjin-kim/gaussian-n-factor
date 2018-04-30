@@ -24,9 +24,9 @@ namespace HJCALIBRATOR
 
 	void GaussianFactorDynamics::setupCorrelMatrix( const Matrix& rho )
 	{
-		for ( int i = 0; i < rho.rows(); i++ )
+		for ( Size i = 0; i < rho.rows(); i++ )
 		{
-			for ( int j = i; j < rho.columns(); j++ )
+			for ( Size j = i; j < rho.columns(); j++ )
 			{
 				rho_[std::minmax(i,j)] = ConstantParameter( rho[i][j], BoundaryConstraint( -1, 1 ) );
 			}
@@ -62,6 +62,28 @@ namespace HJCALIBRATOR
 				   "(" << i << "," << " j)-th correlation factor not found." );
 
 		return it->second;
+	}
+
+	Real GaussianFactorDynamics::E( Size i, Time t, Time T ) const
+	{
+		Parameter a = a_[i];
+		auto lambda = [&a]( Time u )
+		{
+			return a( u );
+		};
+
+		Real val = integrator_( lambda, t, T );
+		return exp( val );
+	}
+
+	Real GaussianFactorDynamics::B( Size i, Time t, Time T ) const
+	{
+		auto lambda = [&, t, T]( Time u )
+		{
+			return 1 / E( i, t, u );
+		};
+
+		return integrator_( lambda, t, T );
 	}
 
 	Real GaussianFactorDynamics::A( Time t, Time T ) const
@@ -129,27 +151,6 @@ namespace HJCALIBRATOR
 		return intsum;
 	}
 
-	Real GaussianFactorDynamics::E( const Parameter& a, Time t, Time T ) const
-	{
-		auto lambda = [&a]( Time u )
-		{
-			return a( u );
-		};
-
-		Real val = integrator_( lambda, t, T );
-		return exp( val );
-	}
-
-	Real GaussianFactorDynamics::B( const Parameter& a, Time t, Time T ) const
-	{
-		auto lambda = [&, t, T]( Time u )
-		{
-			return 1 / E( a, t, u );
-		};
-
-		return integrator_( lambda, t, T );
-	}
-
 	Real GaussianFactorDynamics::meanTforward( Size i, Time T, Time s, Time t ) const
 	{
 		Real intsum = 0;
@@ -171,7 +172,7 @@ namespace HJCALIBRATOR
 
 		auto integrand = [&, T]( Time u )
 		{
-			return sigma_i( u ) * sigma_j( u ) * B( a_j, u, T ) / E(a_i, u, t);
+			return sigma_i( u ) * sigma_j( u ) * B( j, u, T ) / E(i, u, t);
 		};
 
 		return integrator_( integrand, s, t );
@@ -187,7 +188,7 @@ namespace HJCALIBRATOR
 
 		auto integrand = [&, t]( Time u )
 		{
-			return sigma_i( u ) * sigma_j( u ) * B( a_i, a_j, u, t );
+			return sigma_i( u ) * sigma_j( u ) * B( i, j, u, t );
 		};
 
 		return integrator_( integrand, s, t );
@@ -203,13 +204,12 @@ namespace HJCALIBRATOR
 
 		auto integrand = [&, t]( Time u )
 		{
-			return sigma_i( u ) * sigma_j( u ) / E( a_i, a_j, u, t );
+			return sigma_i( u ) * sigma_j( u ) / E( i, j, u, t );
 		};
 
 		return integrator_( integrand, s, t );
 	}
 
-	// must be corrected I guess..
 	Real GaussianFactorDynamics::phi( Size i, Size j, Time t ) const
 	{
 		const Parameter& a_i = a_[i];
@@ -218,37 +218,12 @@ namespace HJCALIBRATOR
 		const Parameter& sigma_i = sigma_[i];
 		const Parameter& sigma_j = sigma_[j];
 
-		auto integrand = [&, t]( Time u, Time s )
+		auto integrand = [&, t]( Time u )
 		{
 			return sigma_i( u ) * sigma_j( u )
-				* (1 / E( a_i, u, s ) + 1 / E( a_j, u, s ))
-				/ E( a_i, a_j, u, t );
+				* (B( j, u, t ) / E( i, u, t ) + B( i, u, t ) / E( j, u, t ));
 		};
 
-		// monte carlo integration
-		SobolRsg sobol( 3 );
-
-		Size N = 0; Size n = 0;
-		for ( Size i = 0; i < 10000; i++ )
-		{
-			auto seq = sobol.nextSequence();
-
-			// value[0] : u - [0,t], value[1] : s - [u,t]
-			Real u = t * seq.value[0];
-			Real s = t * seq.value[1];
-			Real val = t * seq.value[2]; // problematic..
-
-			if ( u < s )
-			{
-				continue;
-			}
-			else
-			{
-				N++;
-				if ( integrand( u, s ) < val ) n++;
-			}
-		}
-
-		return (double( n ) / double( N )) * t * t;
+		return integrator_( integrand, 0, t );
 	}
 }
