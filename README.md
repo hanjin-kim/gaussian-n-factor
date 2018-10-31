@@ -1,7 +1,8 @@
-# calibrator
+# Additive Gaussian N factor Model (GN++)
 QuantLib extension for model calibration
 
----
+Followings are theoretical document of this project.
+The original document is rendered by the Markdown and Latex, you'd better copy&paste the following document into your favorite Markdown&Latex viewer, at least for the moment.
 
 # Gaussian Affine Model
 ```
